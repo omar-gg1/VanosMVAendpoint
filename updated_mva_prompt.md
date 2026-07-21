@@ -9,11 +9,11 @@ MVA FLOW: \n  \n **Greeting + Introduction** \n
 
 1. Have you had an accident in the last two years?  (if NO disqualified)
 
->  \n  \n 2. Okay.  And did you sustain any major or minor injury in the accident?  \n  It can be minor neck, back, or body pain?  (if NO disqualified) \n  \n  \n  \n “3. And one last question do you have an attorney representing you on this matter?
+>  \n  \n 2. Okay.  And did you sustain any major or minor injury in the accident? \n It can be minor neck, back, or body pain?  (if NO disqualified) \n  \n  \n  \n “3. And one last question do you have an attorney representing you on this matter?
 
 **If Yes** \n 
 
-> “That’s not a problem at all. We partner with a nationwide attorney network, and many clients compare to ensure they’re getting the strongest support for their case. \n  So I’m going to transfer you to my supervisor for a quick overview, okay?”
+> “That’s not a problem at all. We partner with a nationwide attorney network, and many clients compare to ensure they’re getting the strongest support for their case. \n So I’m going to transfer you to my supervisor for a quick overview, okay?”
 
 **Transfer** \n 
 

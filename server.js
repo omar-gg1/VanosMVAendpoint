@@ -8,6 +8,11 @@ const MAX_CONNECTIONS_PER_IP = 3;
 const RATE_LIMIT_WINDOW_MS = 60000;
 const MAX_REQUESTS_PER_WINDOW = 10;
 
+if (!process.env.DEEPGRAM_API_KEY) {
+  console.error("FATAL: DEEPGRAM_API_KEY is not set. Exiting.");
+  process.exit(1);
+}
+
 const deepgram = createClient(process.env.DEEPGRAM_API_KEY);
 const connectionCounts = new Map();
 const requestTimestamps = new Map();
@@ -84,11 +89,11 @@ wss.on("connection", (browserSocket, req) => {
             listen: { provider: { type: "deepgram", version: "v2", model: "flux-general-en" } },
             think: {
               provider: { type: "google", model: "gemini-2.5-flash" },
-              prompt: `AGENT_NAME = 'Cassandra Brown'
+              prompt: `AGENT_NAME = 'Ashley Miller'
 COMPANY = 'Citizen Protection Plan'
 LANGUAGE = 'English'
 
-You are Cassandra Brown, a warm and professional female intake specialist calling on behalf of Citizen Protection Plan.
+You are Ashley Miller, a warm and professional female intake specialist calling on behalf of Citizen Protection Plan.
 
 This is a live outbound phone call.
 
@@ -99,7 +104,7 @@ Never say you are an AI or system.
 Keep every response short, one or two sentences, and speak naturally like a real person on the phone.
 
 The greeting has already been spoken by the system:
-Hello, my name is Cassandra Brown. How are you doing today?
+Hello, my name is Ashley Miller. How are you doing today?
 
 Do not repeat the greeting.
 After they respond to the greeting, introduce the purpose of the call.
@@ -111,10 +116,10 @@ Qualifying questions:
 Ask these one at a time, in order, and wait for each answer before moving on.
 
 1. Have you had an accident in the last two years?
-   If they say no, they are disqualified. Politely thank them for their time and end the call.
+   If they say no, they are disqualified. End the call politely with this exact wording: I understand, thank you for your time and have a great day. Do not say anything after that.
 
 2. Did you sustain any major or minor injury in the accident? It can be minor neck, back, or body pain.
-   If they say no, they are disqualified. Politely thank them for their time and end the call.
+   If they say no, they are disqualified. End the call politely with this exact wording: I understand, thank you for your time and have a great day. Do not say anything after that.
 
 3. Do you have an attorney representing you on this matter?
 
@@ -128,13 +133,16 @@ If they say no:
 Say that is alright, and that you will now connect a specialist to sort this out for them.
 Then say you are transferring them: Just a moment please, here we go.
 
+Ending the call:
+When the person says goodbye, asks to end the call, or says they need to go, acknowledge politely and close with have a great day, then stop. Do not continue after that.
+
 Rules:
 Stay warm, calm, and reassuring at all times.
 Do not overwhelm them or stack multiple questions together.
 Only follow this flow. Do not offer legal advice or make promises about outcomes or amounts.`
             },
             speak: { provider: { type: "deepgram", model: "aura-2-luna-en" } },
-            greeting: "Hello, my name is Cassandra Brown. How are you doing today?",
+            greeting: "Hello, my name is Ashley Miller. How are you doing today?",
           },
         });
       });
@@ -213,6 +221,16 @@ Only follow this flow. Do not offer legal advice or make promises about outcomes
       deepgramConnection.on(AgentEvents.Error, (err) => {
         console.error(`[${clientIP}] Deepgram error:`, err?.message);
         if (isShuttingDown || browserSocket.readyState !== browserSocket.OPEN) return;
+        // Auth failures (bad/expired key) fail identically on every retry — don't burn
+        // reconnect cycles on dead air, close cleanly instead.
+        const msg = `${err?.message || ""} ${err?.code || ""}`.toLowerCase();
+        if (msg.includes("401") || msg.includes("403") || msg.includes("unauthorized") || msg.includes("forbidden")) {
+          isShuttingDown = true;
+          browserSocket.send(JSON.stringify({ type: "error", message: "Voice service unavailable." }));
+          if (browserSocket.readyState === browserSocket.OPEN) browserSocket.close();
+          cleanup(true);
+          return;
+        }
         if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
           reconnectAttempts++;
           browserSocket.send(JSON.stringify({ type: "error", message: "Connection issue. Attempting to reconnect..." }));
